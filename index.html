@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PalpiBank • Имперский Порядок</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a2a4f 0%, #2c1e3a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        #app {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container { padding: 20px; flex: 1; overflow-y: auto; }
+        .screen { display: none; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        .logo { text-align: center; margin-bottom: 25px; }
+        .logo i { font-size: 48px; color: #c9a959; }
+        .logo h1 { font-size: 36px; color: #1e2b3c; }
+
+        .btn {
+            padding: 15px; border: none; border-radius: 40px; font-size: 16px;
+            cursor: pointer; width: 100%; margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1e2b3c, #2c3e50); color: white; }
+        .btn-secondary { background: #e9ecef; color: #1e2b3c; }
+        .btn-back { background: #6c757d; color: white; width: auto; padding: 10px 20px; }
+        .btn-logout { background: #8b1e1e; color: white; width: auto; padding: 10px 20px; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-credit { background: linear-gradient(135deg, #2c3e50, #1e2b3c); color: white; border: 2px solid #c9a959; }
+
+        .menu-buttons { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 40px;
+            font-size: 16px;
+        }
+        .screen-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .screen-header h2 { font-size: 22px; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .dashboard-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+        }
+        .card-icon {
+            width: 50px; height: 50px; background: #1e2b3c;
+            border-radius: 16px; display: flex;
+            align-items: center; justify-content: center; margin: 0 auto 10px;
+        }
+        .card-icon i { font-size: 24px; color: #c9a959; }
+
+        .pin-digit {
+            width: 60px; height: 60px; border: 2px solid #c9a959;
+            border-radius: 16px; display: inline-flex; align-items: center;
+            justify-content: center; font-size: 28px; margin: 0 5px;
+        }
+        .pin-input {
+            width: 100%; padding: 15px; border: 2px solid #c9a959;
+            border-radius: 40px; text-align: center; font-size: 28px;
+            letter-spacing: 10px; margin: 20px 0;
+        }
+        .pin-input-container { text-align: center; margin: 20px 0; }
+
+        .cards-container { display: flex; overflow-x: auto; gap: 15px; scroll-snap-type: x mandatory; }
+        .cards-container::-webkit-scrollbar { display: none; }
+        .card-item {
+            flex: 0 0 100%; scroll-snap-align: start;
+            background: linear-gradient(135deg, #1e2b3c, #2c3e50);
+            border-radius: 30px; padding: 25px; color: white;
+            border: 2px solid #c9a959; margin-bottom: 15px;
+        }
+        .card-balance { font-size: 32px; font-weight: bold; color: #c9a959; margin: 15px 0; }
+        .card-credit-info { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 16px; margin-top: 15px; }
+        .slider-dots { text-align: center; margin-top: 10px; }
+        .dot {
+            width: 10px; height: 10px; border-radius: 50%; background: #dee2e6;
+            display: inline-block; margin: 0 5px; cursor: pointer;
+        }
+        .dot.active { background: #c9a959; }
+
+        .credit-card {
+            background: linear-gradient(135deg, #2c3e50, #1e2b3c);
+            border-radius: 30px; padding: 20px; margin: 15px 0;
+            border: 2px solid #c9a959; color: white;
+        }
+        .credit-row { display: flex; justify-content: space-between; padding: 8px 0; }
+
+        .lpc-card {
+            background: linear-gradient(135deg, #1e2b3c, #2c3e50);
+            border-radius: 30px; padding: 25px; text-align: center; color: white;
+        }
+        .lpc-points { font-size: 56px; font-weight: bold; color: #c9a959; }
+        .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 15px 0; }
+        .progress-fill { height: 100%; background: #c9a959; width: 0%; border-radius: 4px; }
+        .level {
+            background: #f8f9fa; border-radius: 16px; padding: 15px;
+            margin-bottom: 10px; border-left: 4px solid #c9a959;
+        }
+
+        .property-item {
+            background: #f8f9fa; border-radius: 20px; padding: 15px;
+            margin-bottom: 10px; display: flex; gap: 15px; align-items: center;
+        }
+        .property-icon {
+            width: 50px; height: 50px; background: #1e2b3c;
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+        }
+        .property-icon i { font-size: 24px; color: #c9a959; }
+
+        .frozen-banner {
+            background: #dc3545; color: white; padding: 20px;
+            border-radius: 20px; text-align: center; margin-bottom: 20px;
+        }
+
+        .modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); display: flex;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal-content {
+            background: white; border-radius: 30px; padding: 25px;
+            max-width: 350px; width: 90%;
+        }
+        .card-option {
+            background: #f8f9fa; border-radius: 20px; padding: 15px;
+            margin-bottom: 10px; cursor: pointer;
+        }
+
+        .notification {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #1e2b3c; color: white; padding: 15px 25px;
+            border-radius: 40px; display: none; z-index: 3000;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- ПИН-ВХОД -->
+    <div id="pinLoginScreen" class="screen">
+        <div class="container">
+            <div class="logo"><i class="fas fa-lock"></i><h1>PalpiBank</h1></div>
+            <p style="text-align:center; margin:20px 0;">Введите PIN-код</p>
+            <div class="pin-input-container">
+                <span class="pin-digit" id="pinDigit1"></span>
+                <span class="pin-digit" id="pinDigit2"></span>
+                <span class="pin-digit" id="pinDigit3"></span>
+                <span class="pin-digit" id="pinDigit4"></span>
+            </div>
+            <input type="password" id="pinInputField" class="pin-input" maxlength="4" inputmode="numeric">
+            <button class="btn btn-primary" id="submitPinBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+            <button class="btn btn-secondary" onclick="showScreen('mainMenu')">Главное меню</button>
+        </div>
+    </div>
+
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="mainMenu" class="screen active">
+        <div class="container">
+            <div class="logo"><i class="fas fa-university"></i><h1>PalpiBank</h1></div>
+            <div id="guestButtons">
+                <button class="btn btn-primary" onclick="showScreen('registration')">Регистрация</button>
+                <button class="btn btn-primary" onclick="showScreen('stateApplication')">Я — государство</button>
+                <button class="btn btn-secondary" onclick="showScreen('about')">О банке</button>
+            </div>
+            <div id="userButtons" class="hidden">
+                <button class="btn btn-primary" onclick="showScreen('login')">Войти</button>
+                <button class="btn btn-primary" onclick="showScreen('stateApplication')">Я — государство</button>
+                <button class="btn btn-secondary" onclick="showScreen('about')">О банке</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- О БАНКЕ -->
+    <div id="about" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
+                <h2>О банке</h2>
+                <div style="width:50px"></div>
+            </div>
+            <div style="background:#f8f9fa; border-radius:20px; padding:20px;">
+                <h3 style="color:#c9a959;">PalpiBank — Имперский банк</h3>
+                <ul style="margin-top:15px; list-style:none;">
+                    <li>✅ Мультивалютные счета (IO, JDC)</li>
+                    <li>✅ Кредиты до 1 млн IO (17% годовых)</li>
+                    <li>✅ Система ЛПК с 5 уровнями</li>
+                    <li>✅ Две карты: дебетовая и кредитная</li>
+                    <li>✅ Переводы между пользователями</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- РЕГИСТРАЦИЯ -->
+    <div id="registration" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
+                <h2>Регистрация</h2>
+                <div style="width:50px"></div>
+            </div>
+            <form id="regForm">
+                <div class="form-group"><label>Имя и отчество</label><input type="text" id="regName" required></div>
+                <div class="form-group">
+                    <label>Статус</label>
+                    <select id="regStatus">
+                        <option value="citizen">Гражданин</option>
+                        <option value="resident">Резидент</option>
+                        <option value="foreigner">Иностранец</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Номер гражданства</label><input type="text" id="regCitizen" required></div>
+                <div class="form-group"><label>Пин-код (4 цифры)</label><input type="password" id="regPin" maxlength="4" pattern="\d{4}" required></div>
+                <div class="form-group"><label>Подтвердите пин-код</label><input type="password" id="regPin2" maxlength="4" pattern="\d{4}" required></div>
+                <button type="button" class="btn btn-primary" onclick="registerUser()">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ЗАЯВКА НА ГОСУДАРСТВО -->
+    <div id="stateApplication" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
+                <h2>Заявка государства</h2>
+                <div style="width:50px"></div>
+            </div>
+            <form id="stateForm">
+                <div class="form-group"><label>Номер государства</label><input type="text" id="stateNumber" required></div>
+                <div class="form-group"><label>Название государства</label><input type="text" id="stateName" required></div>
+                <div class="form-group"><label>ФИО представителя</label><input type="text" id="stateRep" required></div>
+                <div class="form-group"><label>Комментарий</label><textarea id="stateComment" rows="3"></textarea></div>
+                <button type="button" class="btn btn-primary" onclick="submitStateApp()">Отправить заявку</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ВХОД -->
+    <div id="login" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
+                <h2>Вход</h2>
+                <div style="width:50px"></div>
+            </div>
+            <form id="loginForm">
+                <div class="form-group"><label>Номер карты</label><input type="text" id="loginCard" required></div>
+                <div class="form-group"><label>Пин-код</label><input type="password" id="loginPin" maxlength="4" pattern="\d{4}" required></div>
+                <button type="button" class="btn btn-primary" onclick="loginUser()">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ДАШБОРД -->
+    <div id="dashboard" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-logout" onclick="logout()">Выйти</button>
+                <h2>Кабинет</h2>
+                <span id="userName"></span>
+            </div>
+            <div id="frozenBanner" style="display:none;"></div>
+            <div class="dashboard-grid" id="dashboardGrid"></div>
+        </div>
+    </div>
+
+    <!-- БАЛАНС -->
+    <div id="balance" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Мои карты</h2>
+                <div style="width:50px"></div>
+            </div>
+            <div class="cards-container" id="cardsContainer"></div>
+            <div class="slider-dots" id="sliderDots"></div>
+        </div>
+    </div>
+
+    <!-- КРЕДИТ -->
+    <div id="credit" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Кредит</h2>
+                <div style="width:50px"></div>
+            </div>
+            <div class="credit-card">
+                <div class="credit-row"><span>Ваш ЛПК</span><span id="creditLPC">0</span></div>
+                <div class="credit-row"><span>Максимум</span><span>1,000,000 IO</span></div>
+            </div>
+            <form id="creditForm">
+                <div class="form-group"><label>Сумма (IO)</label><input type="number" id="creditAmount" min="1000" max="1000000" step="1000" required oninput="calcCredit()"></div>
+                <div class="form-group"><label>Срок (месяцев)</label><select id="creditTerm" onchange="calcCredit()"><option value="1">1</option><option value="3">3</option><option value="6">6</option><option value="12">12</option></select></div>
+                <div class="form-group"><label>Ежемесячный платёж</label><input type="text" id="creditMonthly" readonly></div>
+                <div class="form-group"><label>Причина</label><textarea id="creditReason" rows="3" required></textarea></div>
+                <button type="button" class="btn btn-credit" onclick="submitCredit()">Отправить заявку</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ПЕРЕВОД -->
+    <div id="transfer" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Перевод</h2>
+                <div style="width:50px"></div>
+            </div>
+            <form id="transferForm">
+                <div class="form-group"><label>Номер карты получателя</label><input type="text" id="transferTo" required></div>
+                <div class="form-group"><label>Сумма (IO)</label><input type="number" id="transferAmount" min="0.01" step="0.01" required></div>
+                <button type="button" class="btn btn-primary" onclick="prepareTransfer()">Продолжить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- СОБСТВЕННОСТЬ -->
+    <div id="property" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Собственность</h2>
+                <div style="width:50px"></div>
+            </div>
+            <div id="propertyList"></div>
+        </div>
+    </div>
+
+    <!-- ЛПК -->
+    <div id="lpc" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Мой ЛПК</h2>
+                <div style="width:50px"></div>
+            </div>
+            <div id="lpcContent"></div>
+        </div>
+    </div>
+
+    <!-- НАСТРОЙКИ -->
+    <div id="settings" class="screen">
+        <div class="container">
+            <div class="screen-header">
+                <button class="btn btn-back" onclick="showScreen('dashboard')">← Назад</button>
+                <h2>Настройки</h2>
+                <div style="width:50px"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="changePin()">Сменить пин-код</button>
+            <button class="btn btn-danger" onclick="deleteAccount()" style="margin-top:15px;">Удалить аккаунт</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ВЫБОРА КАРТЫ -->
+    <div id="cardModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Выберите карту</h3>
+            <div id="cardOptions"></div>
+            <button class="btn btn-secondary" onclick="closeCardModal()">Отмена</button>
+        </div>
+    </div>
+
+    <!-- УВЕДОМЛЕНИЯ -->
+    <div id="notification" class="notification"></div>
+</div>
+
+<script>
+    // ========== НАСТРОЙКИ API ==========
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxUtn3KGAdUrlnS7XGMnnYepShMw3zPYu0uf6-N9oxVfNC0ImH2YhORcDOdKhtgJvXW/exec';
+    
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let currentUser = null;
+    let pendingTransfer = null;
+    
+    // ========== API ВЫЗОВЫ ==========
+    async function apiCall(action, params = {}) {
+        let url = `${API_URL}?action=${action}`;
+        for (let key in params) {
+            url += `&${key}=${encodeURIComponent(params[key])}`;
+        }
+        try {
+            const response = await fetch(url);
+            return await response.json();
+        } catch (e) {
+            showMsg('Ошибка связи с сервером', 'error');
+            return null;
+        }
+    }
+    
+    // ========== PIN-ВХОД ==========
+    let currentPin = '';
+    function initPin() {
+        const input = document.getElementById('pinInputField');
+        input.oninput = (e) => {
+            currentPin = e.target.value.replace(/\D/g, '').slice(0,4);
+            input.value = currentPin;
+            for(let i=0;i<4;i++) {
+                let d = document.getElementById('pinDigit'+(i+1));
+                d.textContent = i < currentPin.length ? '•' : '';
+                d.style.background = i < currentPin.length ? '#f0f0f0' : 'white';
+            }
+        };
+        document.getElementById('submitPinBtn').onclick = async () => {
+            if (currentPin.length !== 4) { showMsg('Введите 4 цифры', 'error'); return; }
+            // Поиск пользователя по PIN
+            const users = await apiCall('getUsers');
+            if (users) {
+                const user = users.find(u => u.pin === currentPin);
+                if (user) {
+                    currentUser = user;
+                    showScreen('dashboard');
+                    updateDashboard();
+                    showMsg('Добро пожаловать!', 'success');
+                } else {
+                    showMsg('Неверный PIN', 'error');
+                }
+            }
+        };
+    }
+    
+    // ========== РЕГИСТРАЦИЯ ==========
+    async function registerUser() {
+        const name = document.getElementById('regName').value;
+        const status = document.getElementById('regStatus').value;
+        const citizen = document.getElementById('regCitizen').value;
+        const pin = document.getElementById('regPin').value;
+        const pin2 = document.getElementById('regPin2').value;
+        
+        if (pin !== pin2) { showMsg('Пин-коды не совпадают', 'error'); return; }
+        
+        const result = await apiCall('register', { name, status, citizenId: citizen, pin });
+        if (result && result.success) {
+            showMsg('Регистрация успешна! Карта: ' + result.cardNumber, 'success');
+            showScreen('mainMenu');
+        } else {
+            showMsg('Ошибка регистрации', 'error');
+        }
+    }
+    
+    // ========== ВХОД ==========
+    async function loginUser() {
+        const card = document.getElementById('loginCard').value;
+        const pin = document.getElementById('loginPin').value;
+        
+        const result = await apiCall('login', { card, pin });
+        if (result && result.success) {
+            currentUser = result.user;
+            showScreen('dashboard');
+            updateDashboard();
+            showMsg('Добро пожаловать!', 'success');
+        } else {
+            showMsg('Неверный номер карты или пин-код', 'error');
+        }
+    }
+    
+    // ========== ГОСУДАРСТВО ==========
+    async function submitStateApp() {
+        const stateNumber = document.getElementById('stateNumber').value;
+        const stateName = document.getElementById('stateName').value;
+        const repName = document.getElementById('stateRep').value;
+        const comment = document.getElementById('stateComment').value;
+        
+        const result = await apiCall('submitStateApplication', { stateNumber, stateName, repName, comment });
+        if (result && result.success) {
+            showMsg('Заявка отправлена Императору', 'success');
+            showScreen('mainMenu');
+        } else {
+            showMsg('Ошибка отправки', 'error');
+        }
+    }
+    
+    // ========== ДАШБОРД ==========
+    function updateDashboard() {
+        if (!currentUser) return;
+        
+        document.getElementById('userName').textContent = currentUser.fullName;
+        
+        if (currentUser.isFrozen === true || currentUser.isFrozen === 'true') {
+            document.getElementById('frozenBanner').style.display = 'block';
+            document.getElementById('frozenBanner').innerHTML = `<div class="frozen-banner"><i class="fas fa-lock"></i> СЧЕТ ЗАМОРОЖЕН<br>${currentUser.freezeReason || 'Причина не указана'}</div>`;
+        } else {
+            document.getElementById('frozenBanner').style.display = 'none';
+        }
+        
+        let cards = [
+            { icon: 'wallet', title: 'Мои карты', screen: 'balance' },
+            { icon: 'exchange-alt', title: 'Перевод', screen: 'transfer' },
+            { icon: 'home', title: 'Собственность', screen: 'property' }
+        ];
+        
+        if (currentUser.status === 'citizen' && currentUser.loyaltyPoints >= 1000) {
+            cards.push({ icon: 'hand-holding-usd', title: 'Кредит', screen: 'credit' });
+        }
+        if (currentUser.status !== 'foreigner') {
+            cards.push({ icon: 'star', title: 'Мой ЛПК', screen: 'lpc' });
+        }
+        cards.push({ icon: 'cog', title: 'Настройки', screen: 'settings' });
+        
+        let html = '';
+        cards.forEach(c => {
+            html += `<div class="dashboard-card" onclick="showScreen('${c.screen}')"><div class="card-icon"><i class="fas fa-${c.icon}"></i></div><h3>${c.title}</h3></div>`;
+        });
+        document.getElementById('dashboardGrid').innerHTML = html;
+    }
+    
+    // ========== БАЛАНС ==========
+    function updateBalance() {
+        if (!currentUser) return;
+        
+        let html = `<div class="card-item"><div class="card-balance">${(currentUser.balance || 0).toFixed(2)} IO</div><div class="card-holder">${currentUser.fullName}</div><div>${currentUser.cardNumber}</div></div>`;
+        
+        if (currentUser.creditCard) {
+            let credit = typeof currentUser.creditCard === 'string' ? JSON.parse(currentUser.creditCard) : currentUser.creditCard;
+            html += `<div class="card-item"><div class="card-balance">${credit.remainingBalance.toFixed(2)} IO</div><div class="card-holder">Кредитная карта</div><div class="card-credit-info"><div>Долг: ${credit.remainingDebt.toFixed(2)} IO</div><div>Платёж: ${credit.monthlyPayment.toFixed(2)} IO</div></div></div>`;
+        }
+        
+        document.getElementById('cardsContainer').innerHTML = html;
+        let dots = '';
+        for (let i = 0; i < (currentUser.creditCard ? 2 : 1); i++) {
+            dots += `<span class="dot ${i===0?'active':''}" onclick="document.querySelector('.cards-container').scrollBy({left: i*360, behavior:'smooth'})"></span>`;
+        }
+        document.getElementById('sliderDots').innerHTML = dots;
+    }
+    
+    // ========== КРЕДИТ ==========
+    function calcCredit() {
+        let amount = parseFloat(document.getElementById('creditAmount').value) || 0;
+        let term = parseInt(document.getElementById('creditTerm').value);
+        let rate = 0.17 / 12;
+        let payment = amount * rate * Math.pow(1+rate, term) / (Math.pow(1+rate, term)-1);
+        document.getElementById('creditMonthly').value = isNaN(payment) ? '0 IO' : payment.toFixed(2) + ' IO';
+    }
+    
+    async function submitCredit() {
+        if (!currentUser) return;
+        let amount = parseFloat(document.getElementById('creditAmount').value);
+        let term = parseInt(document.getElementById('creditTerm').value);
+        let reason = document.getElementById('creditReason').value;
+        
+        const result = await apiCall('submitCredit', {
+            userId: currentUser.cardNumber,
+            userName: currentUser.fullName,
+            amount, term, reason
+        });
+        
+        if (result && result.success) {
+            showMsg('Заявка отправлена Императору', 'success');
+            showScreen('dashboard');
+        } else {
+            showMsg('Ошибка отправки', 'error');
+        }
+    }
+    
+    // ========== ПЕРЕВОД ==========
+    function prepareTransfer() {
+        let to = document.getElementById('transferTo').value;
+        let amount = parseFloat(document.getElementById('transferAmount').value);
+        if (!to || !amount) { showMsg('Заполните поля', 'error'); return; }
+        
+        pendingTransfer = { to, amount };
+        let opts = document.getElementById('cardOptions');
+        opts.innerHTML = `<div class="card-option" onclick="doTransfer('debit')">Дебетовая карта (${currentUser.balance.toFixed(2)} IO)</div>`;
+        if (currentUser.creditCard) {
+            let credit = typeof currentUser.creditCard === 'string' ? JSON.parse(currentUser.creditCard) : currentUser.creditCard;
+            opts.innerHTML += `<div class="card-option" onclick="doTransfer('credit')">Кредитная карта (${credit.remainingBalance.toFixed(2)} IO)</div>`;
+        }
+        document.getElementById('cardModal').style.display = 'flex';
+    }
+    
+    async function doTransfer(type) {
+        closeCardModal();
+        if (!currentUser || !pendingTransfer) return;
+        
+        const result = await apiCall('transfer', {
+            fromCard: currentUser.cardNumber,
+            toCard: pendingTransfer.to,
+            amount: pendingTransfer.amount,
+            note: ''
+        });
+        
+        if (result && result.success) {
+            showMsg('Перевод выполнен', 'success');
+            const userResult = await apiCall('getUserByCard', { card: currentUser.cardNumber });
+            if (userResult) currentUser = userResult;
+            showScreen('dashboard');
+        } else {
+            showMsg(result?.error || 'Ошибка перевода', 'error');
+        }
+    }
+    
+    // ========== СОБСТВЕННОСТЬ ==========
+    function updateProperty() {
+        let list = document.getElementById('propertyList');
+        if (!currentUser.property || currentUser.property.length === 0) {
+            list.innerHTML = '<p style="text-align:center; padding:30px;">Нет собственности</p>';
+            return;
+        }
+        list.innerHTML = currentUser.property.map(p => `<div class="property-item"><div class="property-icon"><i class="fas fa-box"></i></div><div><div class="property-name">${p.name}</div><div class="property-date">${new Date(p.purchaseDate).toLocaleDateString()}</div></div><div style="font-weight:bold; color:#28a745;">${p.price} IO</div></div>`).join('');
+    }
+    
+    // ========== ЛПК ==========
+    function updateLPC() {
+        let points = currentUser.loyaltyPoints || 0;
+        let status = 'Чеканная Печать', next = 200, prog = 0;
+        if (points <= 200) { status = 'Чеканная Печать'; next = 200; prog = points/200*100; }
+        else if (points <= 1200) { status = 'Часовой Протокола'; next = 1200; prog = (points-200)/1000*100; }
+        else if (points <= 3000) { status = 'Цепной Исполнитель'; next = 3000; prog = (points-1200)/1800*100; }
+        else if (points <= 5000) { status = 'Клинок Проверки'; next = 5000; prog = (points-3000)/2000*100; }
+        else { status = 'Железный Гарант'; next = 25000; prog = Math.min((points-5000)/20000*100,100); }
+        
+        document.getElementById('lpcContent').innerHTML = `
+            <div class="lpc-card"><div class="lpc-points">${points}</div><div>${status}</div><div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div><div>${points}/${next}</div></div>
+            <div class="level"><div class="level-header"><span>Чеканная Печать</span><span>0-200</span></div></div>
+            <div class="level"><div class="level-header"><span>Часовой Протокола</span><span>201-1200</span></div></div>
+            <div class="level"><div class="level-header"><span>Цепной Исполнитель</span><span>1201-3000</span></div></div>
+            <div class="level"><div class="level-header"><span>Клинок Проверки</span><span>3001-5000</span></div></div>
+            <div class="level"><div class="level-header"><span>Железный Гарант</span><span>5001+</span></div></div>`;
+    }
+    
+    // ========== НАСТРОЙКИ ==========
+    async function changePin() {
+        if (!currentUser) return;
+        let newPin = prompt('Новый пин-код (4 цифры):');
+        if (!newPin || !/^\d{4}$/.test(newPin)) { showMsg('Некорректный пин', 'error'); return; }
+        const result = await apiCall('updateUserField', { card: currentUser.cardNumber, field: 'pin', value: newPin });
+        if (result && result.success) {
+            currentUser.pin = newPin;
+            showMsg('Пин-код изменён', 'success');
+        } else {
+            showMsg('Ошибка', 'error');
+        }
+    }
+    
+    async function deleteAccount() {
+        if (!currentUser) return;
+        if (confirm('Удалить аккаунт? Это необратимо.')) {
+            // В API нужно добавить функцию удаления
+            showMsg('Функция в разработке', 'info');
+        }
+    }
+    
+    // ========== НАВИГАЦИЯ ==========
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if (id === 'dashboard') updateDashboard();
+        if (id === 'balance') updateBalance();
+        if (id === 'property') updateProperty();
+        if (id === 'lpc') updateLPC();
+        if (id === 'credit') { 
+            document.getElementById('creditLPC').textContent = currentUser?.loyaltyPoints || 0; 
+            calcCredit(); 
+        }
+    }
+    
+    function logout() { currentUser = null; showScreen('mainMenu'); updateMenu(); }
+    function updateMenu() {
+        let hasUsers = true; // упрощённо
+        document.getElementById('guestButtons').classList.toggle('hidden', hasUsers);
+        document.getElementById('userButtons').classList.toggle('hidden', !hasUsers);
+    }
+    function closeCardModal() { document.getElementById('cardModal').style.display = 'none'; pendingTransfer = null; }
+    function showMsg(msg, type) {
+        let n = document.getElementById('notification');
+        n.textContent = msg;
+        n.style.backgroundColor = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#1e2b3c';
+        n.style.display = 'block';
+        setTimeout(() => n.style.display = 'none', 3000);
+    }
+    
+    // ========== ЗАПУСК ==========
+    window.onload = () => {
+        initPin();
+        updateMenu();
+        showScreen('mainMenu');
+    };
+</script>
+</body>
+</html>
